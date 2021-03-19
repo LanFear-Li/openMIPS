@@ -96,7 +96,36 @@ module openmips(
     );
     
     ex ex0(
+        .rst(rst),
         
+        .aluop_i(ex_aluop_i), .alusel_i(ex_alusel_i),
+        .reg1_i(ex_reg1_i), .reg2_i(ex_reg2_i),
+        .wd_i(ex_wd_i), .wreg_i(ex_wreg_i),
+        
+        .wdata_o(ex_wdata_o), .wd_o(ex_wd_o), .wreg_o(ex_wreg_o)
     );
     
+    ex_mem ex_mem0(
+        .clk(clk), .rst(rst), 
+        
+        .ex_wdata(ex_wdata_o), .ex_wd(ex_wd_o), .ex_wreg(ex_wreg_o),
+                
+        .mem_wdata(mem_wdata_i), .mem_wd(mem_wd_i), .mem_wreg(mem_wreg_i)
+    );
+    
+    mem mem0(
+        .rst(rst), 
+          
+        .wdata_i(mem_wdata_i), .wd_o(mem_wd_i), .wreg_o(mem_wreg_i),
+        
+        .wdata_o(mem_wdata_o), .wd_o(mem_wd_o), .wreg_o(mem_wreg_o)
+    );
+    
+    mem_wb mem_wb0(
+        .clk(clk), .rst(rst), 
+                
+        .mem_wdata(mem_wdata_o), .mem_wd(mem_wd_o), .mem_wreg(mem_wreg_o),
+
+        .wb_wdata(wb_wdata_i), .wb_wd(wb_wd_i), .wb_wreg(wb_wreg_i)
+    );
 endmodule
