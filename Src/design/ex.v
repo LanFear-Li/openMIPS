@@ -15,34 +15,83 @@ module ex(
     output reg                  wreg_o    
     );
     
-    reg[`RegBus] logicout;
+    reg[`RegBus]                logic_res;
+    reg[`RegBus]                shift_res;
     
-    // logic type
+    reg                         tmp;
+    reg[4:0]                    i;
+    
+    // sub type logic
     always @ (*) begin
         if (rst == `RstEnable) begin
-            logicout <= `ZeroWord;
+            logic_res   = `ZeroWord;
         end else begin
             case (aluop_i)
-                 `EXE_OR_OP: begin
-                    logicout <= reg1_i | reg2_i;
+                 `SUB_TYPE_AND: begin
+                    logic_res   = reg1_i & reg2_i;
                  end
+                 `SUB_TYPE_OR: begin
+                    logic_res   = reg1_i | reg2_i;
+                 end
+                 `SUB_TYPE_XOR: begin
+                    logic_res   = reg1_i ^ reg2_i;
+                 end
+                 `SUB_TYPE_NOR: begin
+                    logic_res   = ~(reg1_i | reg2_i);
+                 end
+                 `SUB_TYPE_LUI: begin
+                    logic_res[31:16] = reg2_i[15:0]; 
+                 end
+                 
                  default : begin
-                    logicout <= `ZeroWord;
+                    logic_res   = `ZeroWord;
                  end
             endcase
         end
     end
-   
-   // choose type
+    
+    // sub type shift
+    always @ (*) begin
+        if (rst == `RstEnable) begin
+            shift_res   = `ZeroWord;
+        end else begin
+            case (aluop_i)
+                 `SUB_TYPE_SLL: begin
+                    shift_res   = reg2_i << reg1_i[4:0]; 
+                 end
+                 `SUB_TYPE_SRL: begin
+                    shift_res   = reg2_i >> reg1_i[4:0];
+                 end 
+                 `SUB_TYPE_SRA: begin
+                    tmp = reg2_i[31];
+                    shift_res   = reg2_i >> reg1_i[4:0];
+                    for (i = 1; i <= reg1_i[4:0]; i = i + 1) begin
+                        shift_res[31 - i + 1] = tmp;
+                    end
+                 end
+                 
+                 default : begin
+                    shift_res   = `ZeroWord;
+                 end
+            endcase
+        end
+    end
+    
+   // type
    always @ (*) begin
-        wd_o <= wd_i;
-        wreg_o <= wreg_i;
+        wd_o    = wd_i;
+        wreg_o  = wreg_i;
         case (alusel_i)
-            `EXE_RES_LOGIC: begin
-                wdata_o <= logicout;
+            `TYPE_LOGIC: begin
+                wdata_o = logic_res;
             end
+            
+            `TYPE_SHIFT: begin
+                wdata_o = shift_res;
+            end
+            
             default : begin
-                wdata_o <= `ZeroWord;
+                wdata_o = `ZeroWord;
             end
         endcase
     end
