@@ -17,7 +17,7 @@ module regfile(
     input wire                  re2
     );
     
-    reg[`RegBus] regs[0:`RegNum - 1];
+    reg[`RegBus]                regs[0:`RegNum - 1];
     
     always @ (posedge clk) begin
         if (rst == `RstDisable) begin

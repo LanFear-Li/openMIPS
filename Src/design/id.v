@@ -134,6 +134,68 @@ module id(
                         reg2_read_o = 1'b1;
                         instvalid   = `InstValid;                          
                     end
+                    
+                    `FUNCT_NOP_MOVN: begin
+                        aluop_o     = `SUB_TYPE_MOVN;
+                        alusel_o    = `TYPE_NOP;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b1;
+                        instvalid   = `InstValid;
+                        if (reg2_o != `ZeroWord) begin
+                            wreg_o  = `WriteEnable;
+                        end else begin
+                            wreg_o  = `WriteDisable;
+                        end                       
+                    end
+                    
+                    `FUNCT_NOP_MOVZ: begin
+                        aluop_o     = `SUB_TYPE_MOVZ;
+                        alusel_o    = `TYPE_NOP;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b1;
+                        instvalid   = `InstValid; 
+                        if (reg2_o == `ZeroWord) begin
+                            wreg_o  = `WriteEnable;
+                        end else begin
+                            wreg_o  = `WriteDisable;
+                        end                           
+                    end
+                        
+                    `FUNCT_NOP_MFHI: begin
+                        wreg_o      = `WriteEnable;
+                        aluop_o     = `SUB_TYPE_MFHI;
+                        alusel_o    = `TYPE_NOP;
+                        reg1_read_o = 1'b0;
+                        reg2_read_o = 1'b0;
+                        instvalid   = `InstValid;                      
+                    end
+                    
+                    `FUNCT_NOP_MFLO: begin
+                        wreg_o      = `WriteEnable;
+                        aluop_o     = `SUB_TYPE_MFLO;
+                        alusel_o    = `TYPE_NOP;
+                        reg1_read_o = 1'b0;
+                        reg2_read_o = 1'b0;
+                        instvalid   = `InstValid;                          
+                    end
+                    
+                    `FUNCT_NOP_MTHI: begin
+                        wreg_o      = `WriteDisable;
+                        aluop_o     = `SUB_TYPE_MTHI;
+                        alusel_o    = `TYPE_NOP;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b0;
+                        instvalid   = `InstValid;                          
+                    end
+                    
+                    `FUNCT_NOP_MTLO: begin
+                        wreg_o      = `WriteDisable;
+                        aluop_o     = `SUB_TYPE_MTLO;
+                        alusel_o    = `TYPE_NOP;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b0;
+                        instvalid   = `InstValid;                          
+                    end
                     default: begin
                     end
                     endcase
