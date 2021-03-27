@@ -8,6 +8,14 @@ module id(
     input wire[`RegBus]         reg1_data_i,
     input wire[`RegBus]         reg2_data_i,
     
+    input wire[`RegBus]         ex_wdata_i,      
+    input wire[`RegAddrBus]     ex_wd_i,          
+    input wire                  ex_wreg_i,   
+    
+    input wire[`RegBus]         mem_wdata_i,      
+    input wire[`RegAddrBus]     mem_wd_i,          
+    input wire                  mem_wreg_i,
+    
     output reg                  reg1_read_o,
     output reg                  reg2_read_o,
     output reg[`RegAddrBus]     reg1_addr_o,
@@ -20,13 +28,7 @@ module id(
     output reg[`RegAddrBus]     wd_o,           // write address
     output reg                  wreg_o,         // weite register
     
-    input wire[`RegBus]         ex_wdata_i,      
-    input wire[`RegAddrBus]     ex_wd_i,          
-    input wire                  ex_wreg_i,   
-    
-    input wire[`RegBus]         mem_wdata_i,      
-    input wire[`RegAddrBus]     mem_wd_i,          
-    input wire                  mem_wreg_i   
+    output reg                  stallreq       // pipeline stall request   
     );
     
     wire[5:0]                   op          = inst_i[31:26];
@@ -48,6 +50,7 @@ module id(
             reg1_addr_o = `NOPRegAddr;
             reg2_addr_o = `NOPRegAddr;
             imm         = `ZeroWord;
+            stallreq    = `NoStop;
         end else begin
             aluop_o     = `SUB_TYPE_NOP;
             alusel_o    = `TYPE_NOP;
@@ -58,7 +61,8 @@ module id(
             reg2_read_o = 1'b0;
             reg1_addr_o = inst_i[25:21];
             reg2_addr_o = inst_i[20:16];
-            imm         = `ZeroWord;       
+            imm         = `ZeroWord;  
+            stallreq    = `NoStop;     
         end
         
         case (op)   
@@ -137,7 +141,7 @@ module id(
                     
                     `FUNCT_NOP_MOVN: begin
                         aluop_o     = `SUB_TYPE_MOVN;
-                        alusel_o    = `TYPE_NOP;
+                        alusel_o    = `TYPE_MOVE;
                         reg1_read_o = 1'b1;
                         reg2_read_o = 1'b1;
                         instvalid   = `InstValid;
@@ -150,7 +154,7 @@ module id(
                     
                     `FUNCT_NOP_MOVZ: begin
                         aluop_o     = `SUB_TYPE_MOVZ;
-                        alusel_o    = `TYPE_NOP;
+                        alusel_o    = `TYPE_MOVE;
                         reg1_read_o = 1'b1;
                         reg2_read_o = 1'b1;
                         instvalid   = `InstValid; 
@@ -164,7 +168,7 @@ module id(
                     `FUNCT_NOP_MFHI: begin
                         wreg_o      = `WriteEnable;
                         aluop_o     = `SUB_TYPE_MFHI;
-                        alusel_o    = `TYPE_NOP;
+                        alusel_o    = `TYPE_MOVE;
                         reg1_read_o = 1'b0;
                         reg2_read_o = 1'b0;
                         instvalid   = `InstValid;                      
@@ -173,7 +177,7 @@ module id(
                     `FUNCT_NOP_MFLO: begin
                         wreg_o      = `WriteEnable;
                         aluop_o     = `SUB_TYPE_MFLO;
-                        alusel_o    = `TYPE_NOP;
+                        alusel_o    = `TYPE_MOVE;
                         reg1_read_o = 1'b0;
                         reg2_read_o = 1'b0;
                         instvalid   = `InstValid;                          
@@ -182,7 +186,6 @@ module id(
                     `FUNCT_NOP_MTHI: begin
                         wreg_o      = `WriteDisable;
                         aluop_o     = `SUB_TYPE_MTHI;
-                        alusel_o    = `TYPE_NOP;
                         reg1_read_o = 1'b1;
                         reg2_read_o = 1'b0;
                         instvalid   = `InstValid;                          
@@ -191,11 +194,83 @@ module id(
                     `FUNCT_NOP_MTLO: begin
                         wreg_o      = `WriteDisable;
                         aluop_o     = `SUB_TYPE_MTLO;
-                        alusel_o    = `TYPE_NOP;
                         reg1_read_o = 1'b1;
                         reg2_read_o = 1'b0;
                         instvalid   = `InstValid;                          
                     end
+                    
+                    `FUNCT_NOP_ADD: begin
+                        wreg_o      = `WriteEnable;
+                        aluop_o     = `SUB_TYPE_ADD;
+                        alusel_o    = `TYPE_ARITH;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b1;
+                        instvalid   = `InstValid;                         
+                    end
+                    
+                    `FUNCT_NOP_ADDU: begin
+                        wreg_o      = `WriteEnable;
+                        aluop_o     = `SUB_TYPE_ADDU;
+                        alusel_o    = `TYPE_ARITH;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b1;
+                        instvalid   = `InstValid;                         
+                    end
+                    
+                    `FUNCT_NOP_SUB: begin
+                        wreg_o      = `WriteEnable;
+                        aluop_o     = `SUB_TYPE_SUB;
+                        alusel_o    = `TYPE_ARITH;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b1;
+                        instvalid   = `InstValid;                         
+                    end
+                    
+                    `FUNCT_NOP_SUBU: begin
+                        wreg_o      = `WriteEnable;
+                        aluop_o     = `SUB_TYPE_SUBU;
+                        alusel_o    = `TYPE_ARITH;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b1;
+                        instvalid   = `InstValid;                         
+                    end
+                    
+                    `FUNCT_NOP_SLT: begin
+                        wreg_o      = `WriteEnable;
+                        aluop_o     = `SUB_TYPE_SLT;
+                        alusel_o    = `TYPE_ARITH;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b1;
+                        instvalid   = `InstValid;                         
+                    end
+                    
+                    `FUNCT_NOP_SLTU: begin
+                        wreg_o      = `WriteEnable;
+                        aluop_o     = `SUB_TYPE_SLTU;
+                        alusel_o    = `TYPE_ARITH;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b1;
+                        instvalid   = `InstValid;                         
+                    end
+                    
+                    `FUNCT_NOP_MULT: begin
+                        wreg_o      = `WriteDisable;
+                        aluop_o     = `SUB_TYPE_MULT;
+                        alusel_o    = `TYPE_MUL;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b1;
+                        instvalid   = `InstValid;                         
+                    end
+                    
+                    `FUNCT_NOP_MULTU: begin
+                        wreg_o      = `WriteDisable;
+                        aluop_o     = `SUB_TYPE_MULTU;
+                        alusel_o    = `TYPE_MUL;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b1;
+                        instvalid   = `InstValid;                         
+                    end
+                    
                     default: begin
                     end
                     endcase
@@ -254,7 +329,86 @@ module id(
                 reg2_read_o = 1'b0;
                 instvalid   = `InstValid;
             end 
-                
+            
+            `OP_ADDI: begin
+                wreg_o      = `WriteEnable;
+                aluop_o     = `SUB_TYPE_ADD;
+                alusel_o    = `TYPE_ARITH;
+                reg1_read_o = 1'b1;
+                reg2_read_o = 1'b0;
+                imm         = {{16{inst_i[15]}}, inst_i[15:0]};
+                wd_o        = inst_i[20:16];
+            end 
+            
+            `OP_ADDIU: begin
+                wreg_o      = `WriteEnable;
+                aluop_o     = `SUB_TYPE_ADDU;
+                alusel_o    = `TYPE_ARITH;
+                reg1_read_o = 1'b1;
+                reg2_read_o = 1'b0;
+                imm         = {{16{inst_i[15]}}, inst_i[15:0]};
+                wd_o        = inst_i[20:16];
+            end 
+            
+            `OP_SLTI: begin
+                wreg_o      = `WriteEnable;
+                aluop_o     = `SUB_TYPE_SLT;
+                alusel_o    = `TYPE_ARITH;
+                reg1_read_o = 1'b1;
+                reg2_read_o = 1'b0;
+                imm         = {{16{inst_i[15]}}, inst_i[15:0]};
+                wd_o        = inst_i[20:16];
+                instvalid   = `InstValid; 
+            end 
+            
+            `OP_SLTIU: begin
+                wreg_o      = `WriteEnable;
+                aluop_o     = `SUB_TYPE_SLTU;
+                alusel_o    = `TYPE_ARITH;
+                reg1_read_o = 1'b1;
+                reg2_read_o = 1'b0;
+                imm         = {{16{inst_i[15]}}, inst_i[15:0]};
+                wd_o        = inst_i[20:16];
+                instvalid   = `InstValid;
+            end 
+            
+            `OP_SSPECIAL: begin
+                if (shamt != 5'b00000) begin
+                end else begin
+                    case (funt)
+                    `FUNCT_NOP_CLZ: begin
+                        wreg_o      = `WriteEnable;
+                        aluop_o     = `SUB_TYPE_CLZ;
+                        alusel_o    = `TYPE_ARITH;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b1;
+                        instvalid   = `InstValid;                        
+                    end
+                    
+                    `FUNCT_NOP_CLO: begin
+                        wreg_o      = `WriteEnable;
+                        aluop_o     = `SUB_TYPE_CLO;
+                        alusel_o    = `TYPE_ARITH;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b1;
+                        instvalid   = `InstValid;                   
+                    end
+                    
+                    `FUNCT_NOP_MUL: begin
+                        wreg_o      = `WriteEnable;
+                        aluop_o     = `SUB_TYPE_MUL;
+                        alusel_o    = `TYPE_MUL;
+                        reg1_read_o = 1'b1;
+                        reg2_read_o = 1'b1;
+                        instvalid   = `InstValid;                        
+                    end
+                    
+                    default: begin
+                    end
+                    endcase
+                end
+            end 
+            
             default: begin
             end
         endcase   
@@ -296,7 +450,8 @@ module id(
             endcase
         end     
     end
-
+    
+    // reg1 pipeline issue
     always @ (*) begin
         if (rst == `RstEnable) begin
             reg1_o  = `ZeroWord;
@@ -315,11 +470,12 @@ module id(
         end
     end
     
+    // reg2 pipeline issue
     always @ (*) begin
         if (rst == `RstEnable) begin
             reg2_o  = `ZeroWord;
-        end else if (reg2_read_o == 1'b1 && ex_wreg_i == 1'b1) begin
-            if (reg2_addr_o == ex_wd_i) begin
+        end else if (reg2_read_o == 1'b1) begin
+            if (reg2_addr_o == ex_wd_i && ex_wreg_i == 1'b1) begin
                 reg2_o  = ex_wdata_i;
             end else if (reg2_addr_o == mem_wd_i && mem_wreg_i == 1'b1) begin
                 reg2_o  = mem_wdata_i;

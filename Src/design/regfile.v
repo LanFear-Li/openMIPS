@@ -21,7 +21,7 @@ module regfile(
     
     always @ (posedge clk) begin
         if (rst == `RstDisable) begin
-            if (we == `WriteEnable && waddr != `RegNumLog2'h0) begin
+            if (we == `WriteEnable && waddr != `RegNumLen'h0) begin
                 regs[waddr] <= wdata;
             end 
         end
@@ -30,7 +30,7 @@ module regfile(
     always @ (*) begin
         if (rst == `RstEnable) begin
             rdata1  = `ZeroWord;
-        end else if (raddr1 == `RegNumLog2'h0) begin
+        end else if (raddr1 == `RegNumLen'h0) begin
             rdata1  = `ZeroWord;
         end else if (raddr1 == waddr && re1 == `ReadEnable && we == `WriteEnable) begin
             rdata1  = wdata;
@@ -44,7 +44,7 @@ module regfile(
     always @ (*) begin
         if (rst == `RstEnable) begin
             rdata2  = `ZeroWord;
-        end else if (raddr2 == `RegNumLog2'h0) begin
+        end else if (raddr2 == `RegNumLen'h0) begin
             rdata2  = `ZeroWord;
         end else if (raddr2 == waddr && re2 == `ReadEnable && we == `WriteEnable) begin
             rdata2  = wdata;
